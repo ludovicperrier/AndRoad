@@ -1,92 +1,6 @@
 //Created by plusminus on 19:05:55 - 12.02.2008
 package org.androad.ui.map;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.osmdroid.events.MapListener;
-import org.osmdroid.events.ScrollEvent;
-import org.osmdroid.events.ZoomEvent;
-import org.osmdroid.tileprovider.MapTile;
-import org.osmdroid.tileprovider.MapTileProviderBase;
-import org.osmdroid.tileprovider.tilesource.ITileSource;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.util.BoundingBoxE6;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.ScaleBarOverlay;
-import org.osmdroid.views.MapView.Projection;
-import org.osmdroid.views.MapController.AnimationType;
-import org.osmdroid.views.overlay.DirectedLocationOverlay;
-import org.osmdroid.views.overlay.ItemizedOverlay;
-import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
-import org.osmdroid.views.overlay.ItemizedOverlayControlView;
-import org.osmdroid.views.overlay.Overlay;
-import org.osmdroid.views.overlay.OverlayItem;
-import org.osmdroid.views.overlay.OverlayManager;
-import org.osmdroid.views.overlay.ItemizedIconOverlay.OnItemGestureListener;
-
-import org.androad.R;
-import org.androad.adt.AndNavLocation;
-import org.androad.adt.UnitSystem;
-import org.androad.adt.DBPOI;
-import org.androad.adt.Favorite;
-import org.androad.adt.TrafficFeed;
-import org.androad.app.APIIntentReceiver;
-import org.androad.db.DBManager;
-import org.androad.db.DataBaseException;
-import org.androad.exc.Exceptor;
-import org.androad.osm.util.CoordinatesExtractor;
-import org.androad.osm.views.overlay.OSMMapViewCrosshairOverlay;
-import org.androad.osm.views.overlay.OSMMapViewSimpleLineOverlay;
-import org.androad.osm.views.tiles.util.OSMMapTilePreloader;
-import org.androad.osm.views.util.Util;
-import org.androad.osm.util.constants.OSMConstants;
-import org.androad.nav.stats.StatisticsManager;
-import org.androad.preferences.PreferenceConstants;
-import org.androad.preferences.Preferences;
-import org.androad.sys.ors.aas.AASRequester;
-import org.androad.sys.ors.aas.AASResponse;
-import org.androad.sys.ors.adt.GeocodedAddress;
-import org.androad.sys.ors.adt.aoi.AreaOfInterest;
-import org.androad.sys.ors.adt.aoi.Polygon;
-import org.androad.sys.ors.adt.lus.Country;
-import org.androad.sys.ors.adt.lus.ReverseGeocodePreferenceType;
-import org.androad.sys.ors.adt.ts.ISpatialDataOrganizer;
-import org.androad.sys.ors.adt.ts.TrafficItem;
-import org.androad.sys.ors.adt.ts.TrafficOverlayManager;
-import org.androad.sys.ors.exceptions.ORSException;
-import org.androad.sys.ors.ff.FoxyTagRequester;
-import org.androad.sys.ors.lus.LUSRequester;
-import org.androad.sys.ors.tuks.TUKSRequester;
-import org.androad.sys.ors.util.RouteHandleIDExtractor;
-import org.androad.sys.ors.views.overlay.AreaOfInterestOverlay;
-import org.androad.sys.ors.views.overlay.FavoritePoint;
-import org.androad.sys.ors.views.overlay.FoxyTagPoint;
-import org.androad.sys.ors.views.overlay.BitmapItem;
-import org.androad.sys.ors.views.overlay.BitmapOverlay;
-import org.androad.sys.ors.views.overlay.CircleItem;
-import org.androad.sys.ors.views.overlay.CircleOverlay;
-import org.androad.sys.ors.views.overlay.TrafficOverlay;
-import org.androad.sys.ors.views.overlay.TrafficOverlayItem;
-import org.androad.sys.vehicleregistrationplates.VRPRegistry;
-import org.androad.sys.vehicleregistrationplates.tables.IVRPElement;
-import org.androad.ui.camera.CameraFavorite;
-import org.androad.ui.common.CommonCallback;
-import org.androad.ui.common.CommonCallbackAdapter;
-import org.androad.ui.common.CommonDialogFactory;
-import org.androad.ui.common.InlineAutoCompleterConstant;
-import org.androad.ui.common.views.CompassImageView;
-import org.androad.ui.common.views.CompassRotateView;
-import org.androad.ui.sd.SDMainChoose;
-import org.androad.ui.weather.WeatherForecast;
-import org.androad.util.FileSizeFormatter;
-import org.androad.util.UserTask;
-import org.androad.util.constants.Constants;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -112,6 +26,7 @@ import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -123,9 +38,112 @@ import android.view.View.OnTouchListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+import junit.framework.Assert;
+
+import org.androad.R;
+import org.androad.adt.AndNavLocation;
+import org.androad.adt.UnitSystem;
+import org.androad.adt.DBPOI;
+import org.androad.adt.Favorite;
+import org.androad.adt.TrafficFeed;
+import org.androad.app.APIIntentReceiver;
+import org.androad.db.DBManager;
+import org.androad.db.DataBaseException;
+import org.androad.exc.Exceptor;
+import org.androad.osm.util.CoordinatesExtractor;
+import org.androad.osm.views.overlay.OSMMapViewCrosshairOverlay;
+import org.androad.osm.views.overlay.OSMMapViewSimpleLineOverlay;
+import org.androad.osm.views.tiles.util.OSMMapTilePreloader;
+import org.androad.osm.views.util.Util;
+import org.androad.osm.util.constants.OSMConstants;
+import org.androad.nav.stats.StatisticsManager;
+import org.androad.preferences.PreferenceConstants;
+import org.androad.preferences.Preferences;
+import org.androad.sys.ftpc.api.FTPCRequester;
+import org.androad.sys.ors.adt.ds.POIGroup;
+import org.androad.sys.ors.aas.AASRequester;
+import org.androad.sys.ors.aas.AASResponse;
+import org.androad.sys.ors.adt.GeocodedAddress;
+import org.androad.sys.ors.adt.aoi.AreaOfInterest;
+import org.androad.sys.ors.adt.aoi.Polygon;
+import org.androad.sys.ors.adt.ds.POIType;
+import org.androad.sys.ors.adt.lus.Country;
+import org.androad.sys.ors.adt.lus.ReverseGeocodePreferenceType;
+import org.androad.sys.ors.adt.ts.ISpatialDataOrganizer;
+import org.androad.sys.ors.adt.ts.TrafficItem;
+import org.androad.sys.ors.adt.ts.TrafficOverlayManager;
+import org.androad.sys.ors.exceptions.ORSException;
+import org.androad.sys.ors.ff.FoxyTagRequester;
+import org.androad.sys.ors.lus.LUSRequester;
+import org.androad.sys.ors.tuks.TUKSRequester;
+import org.androad.sys.ors.util.RouteHandleIDExtractor;
+import org.androad.sys.ors.views.overlay.AreaOfInterestOverlay;
+import org.androad.sys.ors.views.overlay.OsmBugPoint;
+import org.androad.sys.ors.views.overlay.FavoritePoint;
+import org.androad.sys.ors.views.overlay.FoxyTagPoint;
+import org.androad.sys.ors.views.overlay.BitmapItem;
+import org.androad.sys.ors.views.overlay.BitmapOverlay;
+import org.androad.sys.ors.views.overlay.CircleItem;
+import org.androad.sys.ors.views.overlay.CircleOverlay;
+import org.androad.sys.ors.views.overlay.TrafficOverlay;
+import org.androad.sys.ors.views.overlay.TrafficOverlayItem;
+import org.androad.sys.osb.adt.OpenStreetBug;
+import org.androad.sys.osb.api.OSBRequester;
+import org.androad.sys.postcode.uk_bs_7666.PostcodeUK_BS7776Matcher;
+import org.androad.sys.vehicleregistrationplates.VRPRegistry;
+import org.androad.sys.vehicleregistrationplates.tables.IVRPElement;
+import org.androad.ui.camera.CameraFavorite;
+import org.androad.ui.common.CommonCallback;
+import org.androad.ui.common.CommonCallbackAdapter;
+import org.androad.ui.common.CommonDialogFactory;
+import org.androad.ui.common.CommonDialogFactory.OSBMapLongAddSelectorResult;
+import org.androad.ui.common.InlineAutoCompleterConstant;
+import org.androad.ui.common.views.CompassImageView;
+import org.androad.ui.common.views.CompassRotateView;
+import org.androad.ui.osm.api.nodes.POICategorySelector;
+import org.androad.ui.sd.SDMainChoose;
+import org.androad.ui.weather.WeatherForecast;
+import org.androad.util.FileSizeFormatter;
+import org.androad.util.TimeUtils;
+import org.androad.util.UserTask;
+import org.androad.util.constants.Constants;
+
+import org.openstreetmap.api.exceptions.OSMAPIException;
+import org.openstreetmap.api.node.NodeCreationRequester;
+
+import org.osmdroid.events.MapListener;
+import org.osmdroid.events.ScrollEvent;
+import org.osmdroid.events.ZoomEvent;
+import org.osmdroid.tileprovider.MapTile;
+import org.osmdroid.tileprovider.MapTileProviderBase;
+import org.osmdroid.tileprovider.tilesource.ITileSource;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBoxE6;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.ScaleBarOverlay;
+import org.osmdroid.views.MapView.Projection;
+import org.osmdroid.views.MapController.AnimationType;
+import org.osmdroid.views.overlay.DirectedLocationOverlay;
+import org.osmdroid.views.overlay.ItemizedOverlay;
+import org.osmdroid.views.overlay.ItemizedOverlayWithFocus;
+import org.osmdroid.views.overlay.ItemizedOverlayControlView;
+import org.osmdroid.views.overlay.Overlay;
+import org.osmdroid.views.overlay.OverlayItem;
+import org.osmdroid.views.overlay.OverlayManager;
+import org.osmdroid.views.overlay.ItemizedIconOverlay.OnItemGestureListener;
 
 public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements PreferenceConstants, Constants, OnItemGestureListener<OverlayItem>{
 	// ===========================================================
@@ -136,10 +154,10 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 	private static final int AUTOCENTER_BLOCKTIME = 5000;
 
 	private static final int REQUESTCODE_WEATHER = 0;
-	private static final int REQUESTCODE_OSBMAP = REQUESTCODE_WEATHER + 1;
-	private static final int REQUESTCODE_STRUCTURED_SEARCH_SD_MAINCHOOSE = REQUESTCODE_OSBMAP + 1;
+	private static final int REQUESTCODE_STRUCTURED_SEARCH_SD_MAINCHOOSE = REQUESTCODE_WEATHER + 1;
 	private static final int REQUESTCODE_DDMAP = REQUESTCODE_STRUCTURED_SEARCH_SD_MAINCHOOSE + 1;
 	public static final int REQUESTCODE_PICTURE = REQUESTCODE_DDMAP + 1;
+	private static final int REQUESTCODE_POICATEGORYSELECTOR = REQUESTCODE_PICTURE + 1;
 
 	private final int LAT_INDEX = 0;
 	private final int LON_INDEX = 1;
@@ -152,8 +170,8 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
     private static final int MENU_SUBMENU_POI = MENU_LAYER_ID + 1;
     private static final int MENU_SUBMENU_FOXYTAG = MENU_SUBMENU_POI + 1;
     private static final int MENU_SUBMENU_FAVORITE = MENU_SUBMENU_FOXYTAG + 1;
-	private static final int MENU_OSB_ID = MENU_SUBMENU_FAVORITE + 1;
-	private static final int MENU_PRELOAD_ID = MENU_OSB_ID + 1;
+    private static final int MENU_SUBMENU_OSMBUG = MENU_SUBMENU_FAVORITE + 1;
+	private static final int MENU_PRELOAD_ID = MENU_SUBMENU_OSMBUG + 1;
 	private static final int MENU_ACCESSIBILITYANALYSIS_ID = MENU_PRELOAD_ID + 1;
 	private static final int MENU_LOAD_TRACE_ID = MENU_ACCESSIBILITYANALYSIS_ID + 1;
 	private static final int MENU_SHOWLATLON_ID = MENU_LOAD_TRACE_ID + 1;
@@ -172,7 +190,10 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 	private static final int DIALOG_INPUT_FAVORITE_NAME = DIALOG_SELECT_FREEFORM_OR_STRUCTURED_SEARCH + 1;
 	private static final int DIALOG_SELECT_VEHICLEREGISTRATIONPLATE_LOOKUP_COUNTRIES = DIALOG_INPUT_FAVORITE_NAME + 1;
 	private static final int DIALOG_INPUT_VEHICLEREGISTRATIONPLATE_LOOKUP = DIALOG_SELECT_VEHICLEREGISTRATIONPLATE_LOOKUP_COUNTRIES + 1;
-
+	private static final int DIALOG_SELECT_POI_OR_OSB_OR_FTPC = DIALOG_INPUT_VEHICLEREGISTRATIONPLATE_LOOKUP + 1;
+    private static final int DIALOG_INPUT_OSB_BUG = DIALOG_SELECT_POI_OR_OSB_OR_FTPC + 1;
+	private static final int DIALOG_INPUT_OSM_POI = DIALOG_INPUT_OSB_BUG + 1;
+	private static final int DIALOG_INPUT_OSM_ACCOUNT_INFO = DIALOG_INPUT_OSM_POI + 1;
 
 	private static final int CENTERMODE_NONE = 0;
 	private static final int CENTERMODE_ONCE = CENTERMODE_NONE + 1;
@@ -220,6 +241,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
     private CircleOverlay mPOIOverlay;
 	private CircleOverlay mFFOverlay;
 	private BitmapOverlay mFavoriteOverlay;
+    private CircleOverlay mOsmBugOverlay;
 	private TrafficOverlay mTrafficOverlay;
 	private BitmapItem mStartFlagItem;
 	private BitmapItem mDestinationFlagItem;
@@ -252,6 +274,10 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
     private boolean showOverlayPoi = false;
     private boolean showOverlayFoxyTag = false;
     private boolean showOverlayFavorite = false;
+    private boolean showOverlayOsmBug = false;
+
+    // POI Type of new added poi
+	private POIType mAddOSMPOIType;
 
 	// ===========================================================
 	// Constructors
@@ -303,6 +329,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
         this.mPOIOverlay = new CircleOverlay(this);
 		this.mFFOverlay = new CircleOverlay(this);
 		this.mFavoriteOverlay = new BitmapOverlay(this);
+        this.mOsmBugOverlay = new CircleOverlay(this);
 		this.mAreaOfAvoidingsOverlay = new AreaOfInterestOverlay(this, this.mAvoidAreas);
         this.mFlagsOverlay = new BitmapOverlay(this);
 
@@ -321,6 +348,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
         overlaymanager.add(this.mPOIOverlay);
 		overlaymanager.add(this.mFFOverlay);
 		overlaymanager.add(this.mFavoriteOverlay);
+        overlaymanager.add(this.mOsmBugOverlay);
 		overlaymanager.add(this.mAreaOfAvoidingsOverlay);
 		overlaymanager.add(this.mTrafficOverlay);
 		overlaymanager.add(this.mNavPointsConnectionLineOverlay);
@@ -628,6 +656,10 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 					Log.e(OSMConstants.DEBUGTAG, "File-Writing-Error", e);
 				}
                 break;
+            case REQUESTCODE_POICATEGORYSELECTOR:
+				this.mAddOSMPOIType = POIType.values()[resultCode];
+				showDialog(DIALOG_INPUT_OSM_POI);
+				break;
 		}
 	}
 
@@ -786,6 +818,8 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                     .setIcon(R.drawable.foxytag);
                 subMenu.add(menuPos, MENU_SUBMENU_FAVORITE, menuPos, getString(R.string.maps_menu_submenu_layer_favorite))
                     .setIcon(R.drawable.settingsmenu_favorites);
+                subMenu.add(menuPos, MENU_SUBMENU_OSMBUG, menuPos, getString(R.string.maps_menu_submenu_layer_osmbug))
+                    .setIcon(R.drawable.settingsmenu_osmbug);
                 subMenu.setGroupCheckable(menuPos, true, false);
                 menuPos++;
             }
@@ -826,13 +860,6 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 			menu.add(menuPos, MENU_PRELOAD_ID, menuPos, getString(R.string.maps_menu_preload))
 			.setIcon(R.drawable.preload)
 			.setAlphabeticShortcut('p');
-			menuPos++;
-		}
-
-		{ // OSB-Item
-			menu.add(menuPos, MENU_OSB_ID, menuPos, getString(R.string.maps_menu_osb))
-			.setIcon(R.drawable.osb_icon_bug_add)
-			.setAlphabeticShortcut('b');
 			menuPos++;
 		}
 
@@ -899,11 +926,11 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
             case MENU_SUBMENU_FAVORITE:
                 showFavorite(item);
                 return true;
+            case MENU_SUBMENU_OSMBUG:
+                showOsmBug(item);
+                return true;
 			case MENU_GPSSTATUS_ID:
 				org.androad.ui.util.Util.startUnknownActivity(this, "com.eclipsim.gpsstatus.VIEW", "com.eclipsim.gpsstatus");
-				return true;
-			case MENU_OSB_ID:
-				openOSBMap();
 				return true;
 			case MENU_QUIT_ID:
 				this.setResult(Constants.SUBACTIVITY_RESULTCODE_CHAINCLOSE_QUITTED);
@@ -1052,6 +1079,87 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 						}
 					}
 				});
+            case DIALOG_SELECT_POI_OR_OSB_OR_FTPC:
+                return CommonDialogFactory.createAddOSBorFTPCDialog(WhereAmIMap.this, new CommonCallbackAdapter<OSBMapLongAddSelectorResult>(){
+
+					@Override
+					public void onSuccess(final OSBMapLongAddSelectorResult result) {
+						switch(result){
+							case OSB:
+								showDialog(DIALOG_INPUT_OSB_BUG);
+								break;
+							case FTPC:
+								showAddFTPCDialog();
+								break;
+							case OSMPOI:
+								showAddPOIDialog();
+								break;
+						}
+					}
+				});
+			case DIALOG_INPUT_OSB_BUG:
+				return CommonDialogFactory.createAddOSBBugDialog(this, new CommonCallbackAdapter<String>(){
+					@Override
+					public void onSuccess(final String result) {
+						try{
+							final int assignedID = OSBRequester.submitBug(WhereAmIMap.this.mOSMapView.getMapCenter(), result);
+							if(assignedID < 0){
+								runOnUiThread(new Runnable(){
+									@Override
+									public void run() {
+										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_bug_error, Toast.LENGTH_LONG).show();
+									}
+								});
+								return;
+							}
+						} catch (final IOException e) {
+							onFailure(e);
+						}
+					}
+				});
+			case DIALOG_INPUT_OSM_POI:
+				return CommonDialogFactory.createInputOSMPOIDialog(this, this.mAddOSMPOIType, new CommonCallback<String>(){
+					@Override
+					public void onSuccess(final String pResultName) {
+						// TODO Ensure mapcenter did not change
+						if(pResultName == null || pResultName.length() == 0){
+							onFailure(new OSMAPIException("Invalid name."));
+						}else{
+							try {
+								final GeoPoint mapCenter = WhereAmIMap.this.mOSMapView.getMapCenter();
+								final POIType poi = WhereAmIMap.this.mAddOSMPOIType;
+
+								Assert.assertNotNull(poi);
+								Assert.assertNotNull(mapCenter);
+								Assert.assertFalse(poi.POIGROUPS[0] == POIGroup.MAINGROUP);
+
+								final long now = System.currentTimeMillis();
+								final String utcTimestamp = TimeUtils.convertTimestampToUTCString(now);
+								final String username = Preferences.getOSMAccountUsername(WhereAmIMap.this);
+								final String password = Preferences.getOSMAccountPassword(WhereAmIMap.this);
+
+								NodeCreationRequester.requestAddPOI(username, password, pResultName,
+										mapCenter.getLatitudeE6() / 1E6, mapCenter.getLongitudeE6() / 1E6,
+										utcTimestamp, poi.OSMKEYNAME, poi.RAWNAME);
+							} catch (final Throwable t) {
+								onFailure(t);
+							}
+						}
+					}
+
+					@Override
+					public void onFailure(final Throwable t) {
+					}
+				});
+			case DIALOG_INPUT_OSM_ACCOUNT_INFO:
+				return CommonDialogFactory.createOSMAccountInfoDialog(this, new CommonCallbackAdapter<Boolean>(){
+					@Override
+					public void onSuccess(final Boolean result) {
+						if(result){
+							showPOICategorySelectorActivity();
+						}
+					}
+				});
 			default:
 				return null;
 		}
@@ -1186,6 +1294,95 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 	// Methods
 	// ===========================================================
 
+	private void showAddFTPCDialog() {
+		final LayoutInflater inflater = LayoutInflater.from(this);
+		final FrameLayout fl = (FrameLayout)inflater.inflate(R.layout.dlg_osb_add_ftpc, null);
+
+		final EditText etMail = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_mail);
+		final EditText etPostcode1 = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_postcode1);
+		final EditText etPostcode2 = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_postcode2);
+
+		etMail.setText(Preferences.getFTPCConfirmationMail(this));
+		etPostcode1.setSelectAllOnFocus(true);
+		etPostcode2.setSelectAllOnFocus(true);
+
+		new AlertDialog.Builder(this)
+		.setView(fl)
+		.setTitle(R.string.dlg_osb_add_ftpc_title)
+		.setPositiveButton(R.string.save, new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(final DialogInterface d, final int which) {
+				final String mail = etMail.getText().toString();
+
+				/* TODO Add simple Email-Matcher. */
+				if(mail.length() == 0){
+					Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_ftpc_mail_invalid_comment, Toast.LENGTH_LONG).show();
+					return;
+				}
+
+				/* Store email for next use. */
+				Preferences.saveFTPCConfirmationMail(WhereAmIMap.this, mail);
+
+				final String postcode1 = etPostcode1.getText().toString();
+				final String postcode2 = etPostcode2.getText().toString();
+				final String postcode = postcode1 + " " + postcode2;
+
+				if(postcode.length() == 0 || !PostcodeUK_BS7776Matcher.doesMatchUKPostcode_BS_7666(postcode)){
+					Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_ftpc_postcode_invalid_comment, Toast.LENGTH_LONG).show();
+					return;
+				}
+
+				Toast.makeText(WhereAmIMap.this, R.string.please_wait_a_moment, Toast.LENGTH_LONG).show();
+				new Thread(new Runnable(){
+					@Override
+					public void run() {
+						try {
+							final boolean success = FTPCRequester.submitPostcode(WhereAmIMap.this.mOSMapView.getMapCenter(), postcode1, postcode2, mail);
+							if(success){
+								runOnUiThread(new Runnable(){
+									@Override
+									public void run() {
+										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_ftpc_success, Toast.LENGTH_LONG).show();
+									}
+								});
+							}else{
+								runOnUiThread(new Runnable(){
+									@Override
+									public void run() {
+										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_ftpc_failed, Toast.LENGTH_LONG).show();
+									}
+								});
+							}
+						} catch (final Exception e) {
+							Exceptor.e("Error submitting FreeThePostcode-Postcode.", e, WhereAmIMap.this);
+						}
+					}
+				}).start();
+
+				d.dismiss();
+			}
+		})
+		.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(final DialogInterface d, final int which) {
+				d.dismiss();
+			}
+		}).create().show();
+	}
+
+	protected void showAddPOIDialog() {
+		if(Preferences.getOSMAccountUsername(this).length() == 0){
+			showDialog(DIALOG_INPUT_OSM_ACCOUNT_INFO);
+		}else{
+			showPOICategorySelectorActivity();
+		}
+	}
+
+	protected void showPOICategorySelectorActivity() {
+		final Intent i = new Intent(this, POICategorySelector.class);
+		startActivityForResult(i, REQUESTCODE_POICATEGORYSELECTOR);
+	}
+
     private void showPoi(final MenuItem item) {
         if (item.isChecked()) {
             item.setChecked(false);
@@ -1219,10 +1416,22 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
         updateFavorite();
     }
 
+    private void showOsmBug(final MenuItem item) {
+        if (item.isChecked()) {
+            item.setChecked(false);
+        } else {
+            item.setChecked(true);
+        }
+        showOverlayOsmBug = item.isChecked();
+
+        updateOsmBug();
+    }
+
     public void updateLayers() {
         updatePoi();
         updateFoxyTag();
         updateFavorite();
+        updateOsmBug();
     }
 
     private void updatePoi() {
@@ -1288,6 +1497,30 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                         }
                     }
                 }, "Favorite-Runner").start();
+        }
+    }
+
+	private void updateOsmBug() {
+        final List<CircleItem> bugs = WhereAmIMap.this.mOsmBugOverlay.getCircleItems();
+        if (bugs.size() > 0) {
+            bugs.clear();
+        }
+
+        if (showOverlayOsmBug &&
+            this.mOSMapView.getZoomLevel() > 11) {
+            new Thread(new Runnable(){
+                    @Override
+                    public void run() {
+                        final BoundingBoxE6 drawnBoundingBoxE6 = WhereAmIMap.this.mOSMapView.getBoundingBox();
+                        try {
+                            for (final OpenStreetBug bug : OSBRequester.getBugsFromBoundingBoxE6(drawnBoundingBoxE6)) {
+                                bugs.add(new OsmBugPoint(bug, WhereAmIMap.this));
+                            }
+                        } catch (final Exception e) {
+                            Log.e(Constants.DEBUGTAG, "AASRequester-Error", e);
+                        }
+                    }
+                }, "OsmBug-Runner").start();
         }
     }
 
@@ -1401,11 +1634,6 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 		}).show();
 	}
 
-	private void openOSBMap(){
-		final Intent osbIntent = new Intent(this, OSBMap.class);
-		startActivityForResult(osbIntent, REQUESTCODE_OSBMAP);
-	}
-
 	private void openWeatherDialog(final GeoPoint pGeoPoint) {
 		final Intent getWeatherIntent = new Intent(this, WeatherForecast.class);
 
@@ -1504,6 +1732,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 						getString(R.string.tv_whereami_contextmenu_add_as_favorite),
 						getString(R.string.tv_whereami_contextmenu_show_radar),
 						getString(R.string.tv_whereami_contextmenu_weather_get),
+                        getString(R.string.tv_whereami_contextmenu_osb),
 						getString(R.string.tv_whereami_contextmenu_close)};
 				new AlertDialog.Builder(WhereAmIMap.this)
 				.setSingleChoiceItems(items, 0, new DialogInterface.OnClickListener(){
@@ -1527,6 +1756,9 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 							case 3:
 								openWeatherDialog(WhereAmIMap.this.mGPLastMapClick);
 								break;
+                            case 4:
+                                showDialog(DIALOG_SELECT_POI_OR_OSB_OR_FTPC);
+                                break;
 							case 5:
 								return;
 						}
