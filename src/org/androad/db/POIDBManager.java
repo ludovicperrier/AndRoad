@@ -13,6 +13,7 @@ import java.util.List;
 import microsoft.mappoint.TileSystem;
 
 import org.androad.adt.DBPOI;
+import org.androad.util.constants.Constants;
 
 import org.osmdroid.util.BoundingBoxE6;
 import org.osmdroid.util.GeoPoint;
@@ -164,7 +165,7 @@ public class POIDBManager {
 		return  (int) ((1 - eval / Math.PI) / 2 * l);
 	}
 
-    public boolean contains(BoundingBoxE6 view) {
+    public boolean contains(final BoundingBoxE6 view) {
 
         if (limits == null)
             return false;
@@ -181,7 +182,7 @@ public class POIDBManager {
         return false;
     }
 
-    public List<DBPOI> getPOIs(BoundingBoxE6 view) {
+    public List<DBPOI> getPOIs(final BoundingBoxE6 view) {
         final ArrayList<DBPOI> list = new ArrayList<DBPOI>();
 
         if (db == null) return list;
@@ -213,7 +214,7 @@ public class POIDBManager {
 		}
 		query.close();
 
-        Log.d("Fabien", "count dbpoi = " + list.size());
+        Log.d(Constants.DEBUGTAG, "count dbpoi = " + list.size());
 
         return list;
     }

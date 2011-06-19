@@ -1102,7 +1102,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 					@Override
 					public void onSuccess(final String result) {
 						try{
-							final int assignedID = OSBRequester.submitBug(WhereAmIMap.this.mOSMapView.getMapCenter(), result);
+							final int assignedID = OSBRequester.submitBug(WhereAmIMap.this.mGPLastMapClick, result);
 							if(assignedID < 0){
 								runOnUiThread(new Runnable(){
 									@Override
@@ -1126,7 +1126,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 							onFailure(new OSMAPIException("Invalid name."));
 						}else{
 							try {
-								final GeoPoint mapCenter = WhereAmIMap.this.mOSMapView.getMapCenter();
+								final GeoPoint mapCenter = WhereAmIMap.this.mGPLastMapClick;
 								final POIType poi = WhereAmIMap.this.mAddOSMPOIType;
 
 								Assert.assertNotNull(poi);
@@ -1337,7 +1337,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 					@Override
 					public void run() {
 						try {
-							final boolean success = FTPCRequester.submitPostcode(WhereAmIMap.this.mOSMapView.getMapCenter(), postcode1, postcode2, mail);
+							final boolean success = FTPCRequester.submitPostcode(WhereAmIMap.this.mGPLastMapClick, postcode1, postcode2, mail);
 							if(success){
 								runOnUiThread(new Runnable(){
 									@Override
