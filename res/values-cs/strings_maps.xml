@@ -24,6 +24,7 @@
     <string name="maps_menu_submenu_layer_foxytag">Foxy Tag</string>
 	<string name="maps_menu_submenu_layer_favorite">Favorites</string>
 	<string name="maps_menu_submenu_layer_osmbug">OSM Bug</string>
+	<string name="maps_menu_submenu_layer_mapannotations">Map annotations</string>
 	<string name="maps_menu_submenu_traffic">Informace o dopravě</string>
 	<string name="maps_menu_submenu_traffic_clear">Informace o dopravě <b>smazat</b></string>
 	<string name="maps_menu_submenu_traffic_custom_feeds">Vlastní zdroje..</string>

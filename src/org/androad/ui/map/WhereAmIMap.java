@@ -61,6 +61,7 @@ import org.androad.adt.TrafficFeed;
 import org.androad.app.APIIntentReceiver;
 import org.androad.db.DBManager;
 import org.androad.db.DataBaseException;
+import org.androad.db.MapAnnotationsDBManager;
 import org.androad.exc.Exceptor;
 import org.androad.osm.util.CoordinatesExtractor;
 import org.androad.osm.views.overlay.OSMMapViewCrosshairOverlay;
@@ -171,7 +172,8 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
     private static final int MENU_SUBMENU_FOXYTAG = MENU_SUBMENU_POI + 1;
     private static final int MENU_SUBMENU_FAVORITE = MENU_SUBMENU_FOXYTAG + 1;
     private static final int MENU_SUBMENU_OSMBUG = MENU_SUBMENU_FAVORITE + 1;
-	private static final int MENU_PRELOAD_ID = MENU_SUBMENU_OSMBUG + 1;
+    private static final int MENU_SUBMENU_MAPANNOTATIONS = MENU_SUBMENU_OSMBUG + 1;
+	private static final int MENU_PRELOAD_ID = MENU_SUBMENU_MAPANNOTATIONS + 1;
 	private static final int MENU_ACCESSIBILITYANALYSIS_ID = MENU_PRELOAD_ID + 1;
 	private static final int MENU_LOAD_TRACE_ID = MENU_ACCESSIBILITYANALYSIS_ID + 1;
 	private static final int MENU_SHOWLATLON_ID = MENU_LOAD_TRACE_ID + 1;
@@ -242,6 +244,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 	private CircleOverlay mFFOverlay;
 	private BitmapOverlay mFavoriteOverlay;
     private CircleOverlay mOsmBugOverlay;
+    private CircleOverlay mMapAnnotationsOverlay;
 	private TrafficOverlay mTrafficOverlay;
 	private BitmapItem mStartFlagItem;
 	private BitmapItem mDestinationFlagItem;
@@ -263,6 +266,8 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 
 	private boolean mNavPointsCrosshairMode;
 
+    private MapAnnotationsDBManager mapAnnotationDB;
+
 	/**
 	 * Indicates whether driving-statistics are generated.
 	 * Loaded from Preferences in onResume().
@@ -275,6 +280,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
     private boolean showOverlayFoxyTag = false;
     private boolean showOverlayFavorite = false;
     private boolean showOverlayOsmBug = false;
+    private boolean showOverlayMapAnnotations = false;
 
     // POI Type of new added poi
 	private POIType mAddOSMPOIType;
@@ -330,6 +336,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 		this.mFFOverlay = new CircleOverlay(this);
 		this.mFavoriteOverlay = new BitmapOverlay(this);
         this.mOsmBugOverlay = new CircleOverlay(this);
+        this.mMapAnnotationsOverlay = new CircleOverlay(this);
 		this.mAreaOfAvoidingsOverlay = new AreaOfInterestOverlay(this, this.mAvoidAreas);
         this.mFlagsOverlay = new BitmapOverlay(this);
 
@@ -349,12 +356,15 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 		overlaymanager.add(this.mFFOverlay);
 		overlaymanager.add(this.mFavoriteOverlay);
         overlaymanager.add(this.mOsmBugOverlay);
+        overlaymanager.add(this.mMapAnnotationsOverlay);
 		overlaymanager.add(this.mAreaOfAvoidingsOverlay);
 		overlaymanager.add(this.mTrafficOverlay);
 		overlaymanager.add(this.mNavPointsConnectionLineOverlay);
 		overlaymanager.add(this.mFlagsOverlay);
 		overlaymanager.add(this.mMyLocationOverlay);
 		overlaymanager.add(this.mCrosshairOverlay);
+
+        mapAnnotationDB = new MapAnnotationsDBManager(this);
 	}
 
 	private void refreshPinOverlay(final GeoPoint pGeoPoint) {
@@ -820,6 +830,8 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                     .setIcon(R.drawable.settingsmenu_favorites);
                 subMenu.add(menuPos, MENU_SUBMENU_OSMBUG, menuPos, getString(R.string.maps_menu_submenu_layer_osmbug))
                     .setIcon(R.drawable.settingsmenu_osmbug);
+                subMenu.add(menuPos, MENU_SUBMENU_MAPANNOTATIONS, menuPos, getString(R.string.maps_menu_submenu_layer_mapannotations))
+                    .setIcon(R.drawable.settingsmenu_mapannotations);
                 subMenu.setGroupCheckable(menuPos, true, false);
                 menuPos++;
             }
@@ -928,6 +940,9 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                 return true;
             case MENU_SUBMENU_OSMBUG:
                 showOsmBug(item);
+                return true;
+            case MENU_SUBMENU_MAPANNOTATIONS:
+                showMapAnnotations(item);
                 return true;
 			case MENU_GPSSTATUS_ID:
 				org.androad.ui.util.Util.startUnknownActivity(this, "com.eclipsim.gpsstatus.VIEW", "com.eclipsim.gpsstatus");
@@ -1427,11 +1442,23 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
         updateOsmBug();
     }
 
+    private void showMapAnnotations(final MenuItem item) {
+        if (item.isChecked()) {
+            item.setChecked(false);
+        } else {
+            item.setChecked(true);
+        }
+        showOverlayMapAnnotations = item.isChecked();
+
+        updateMapAnnotations();
+    }
+
     public void updateLayers() {
         updatePoi();
         updateFoxyTag();
         updateFavorite();
         updateOsmBug();
+        updateMapAnnotations();
     }
 
     private void updatePoi() {
@@ -1446,7 +1473,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                     @Override
                     public void run() {
                         for (final DBPOI poi : DBManager.getPOIs(WhereAmIMap.this, WhereAmIMap.this.mOSMapView.getBoundingBox())) {
-                            pois.add(new CircleItem(poi, WhereAmIMap.this, Color.YELLOW, poi.getName()));
+                            pois.add(new CircleItem(poi, WhereAmIMap.this, Color.BLUE, poi.getName()));
                         }
                     }
                 }, "POI-Runner").start();
@@ -1470,7 +1497,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                                     ff.add(fpp);
                             }
                         } catch (final Exception e) {
-                            Log.e(Constants.DEBUGTAG, "AASRequester-Error", e);
+                            Log.e(Constants.DEBUGTAG, "FoxyTagRequester-Error", e);
                         }
                     }
                 }, "FoxyTag-Runner").start();
@@ -1511,16 +1538,34 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
             new Thread(new Runnable(){
                     @Override
                     public void run() {
-                        final BoundingBoxE6 drawnBoundingBoxE6 = WhereAmIMap.this.mOSMapView.getBoundingBox();
                         try {
-                            for (final OpenStreetBug bug : OSBRequester.getBugsFromBoundingBoxE6(drawnBoundingBoxE6)) {
+                            for (final OpenStreetBug bug : OSBRequester.getBugsFromBoundingBoxE6(WhereAmIMap.this.mOSMapView.getBoundingBox())) {
                                 bugs.add(new OsmBugPoint(bug, WhereAmIMap.this));
                             }
                         } catch (final Exception e) {
-                            Log.e(Constants.DEBUGTAG, "AASRequester-Error", e);
+                            Log.e(Constants.DEBUGTAG, "OSBRequester-Error", e);
                         }
                     }
                 }, "OsmBug-Runner").start();
+        }
+    }
+
+	private void updateMapAnnotations() {
+        final List<CircleItem> mapannotations = WhereAmIMap.this.mMapAnnotationsOverlay.getCircleItems();
+        if (mapannotations.size() > 0) {
+            mapannotations.clear();
+        }
+
+        if (showOverlayMapAnnotations &&
+            this.mOSMapView.getZoomLevel() > 11) {
+            new Thread(new Runnable(){
+                    @Override
+                    public void run() {
+                        for (final DBPOI poi : mapAnnotationDB.getAll(WhereAmIMap.this.mOSMapView.getBoundingBox())) {
+                            mapannotations.add(new CircleItem(poi, WhereAmIMap.this, Color.YELLOW, poi.getName()));
+                        }
+                    }
+                }, "MapAnnotations-Runner").start();
         }
     }
 

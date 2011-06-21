@@ -24,6 +24,7 @@
     <string name="maps_menu_submenu_layer_foxytag">Foxy Tag</string>
 	<string name="maps_menu_submenu_layer_favorite">Les Favoris</string>
 	<string name="maps_menu_submenu_layer_osmbug">OSM Bug</string>
+	<string name="maps_menu_submenu_layer_mapannotations">Annotations de la carte</string>
 	<string name="maps_menu_submenu_traffic">Trafic</string>
 	<string name="maps_menu_submenu_traffic_clear"><b>Effacer</b> le trafic</string>
 	<string name="maps_menu_submenu_traffic_custom_feeds">Sources personnalisées...</string>
