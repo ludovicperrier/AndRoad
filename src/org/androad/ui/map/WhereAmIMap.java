@@ -195,7 +195,6 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 	private static final int DIALOG_SELECT_POI_OR_OSB_OR_FTPC = DIALOG_INPUT_VEHICLEREGISTRATIONPLATE_LOOKUP + 1;
     private static final int DIALOG_INPUT_OSB_BUG = DIALOG_SELECT_POI_OR_OSB_OR_FTPC + 1;
 	private static final int DIALOG_INPUT_OSM_POI = DIALOG_INPUT_OSB_BUG + 1;
-	private static final int DIALOG_INPUT_OSM_ACCOUNT_INFO = DIALOG_INPUT_OSM_POI + 1;
 
 	private static final int CENTERMODE_NONE = 0;
 	private static final int CENTERMODE_ONCE = CENTERMODE_NONE + 1;
@@ -668,6 +667,10 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
                 break;
             case REQUESTCODE_POICATEGORYSELECTOR:
 				this.mAddOSMPOIType = POIType.values()[resultCode];
+                if (CommonDialogFactory.inputOSMPOI != null) {
+                    final TextView tvCategoryName = (TextView)CommonDialogFactory.inputOSMPOI.findViewById(R.id.tv_dlg_input_osmpoiname_name);
+                    tvCategoryName.setText(this.mAddOSMPOIType.READABLENAMERESID);
+                }
 				showDialog(DIALOG_INPUT_OSM_POI);
 				break;
 		}
@@ -1107,7 +1110,7 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 								showAddFTPCDialog();
 								break;
 							case OSMPOI:
-								showAddPOIDialog();
+								showPOICategorySelectorActivity();
 								break;
 						}
 					}
@@ -1116,63 +1119,29 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 				return CommonDialogFactory.createAddOSBBugDialog(this, new CommonCallbackAdapter<String>(){
 					@Override
 					public void onSuccess(final String result) {
-						try{
-							final int assignedID = OSBRequester.submitBug(WhereAmIMap.this.mGPLastMapClick, result);
-							if(assignedID < 0){
-								runOnUiThread(new Runnable(){
-									@Override
-									public void run() {
-										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_bug_error, Toast.LENGTH_LONG).show();
-									}
-								});
-								return;
-							}
-						} catch (final IOException e) {
-							onFailure(e);
-						}
+                        mapAnnotationDB.addOsbBug(WhereAmIMap.this.mGPLastMapClick, result);
 					}
 				});
 			case DIALOG_INPUT_OSM_POI:
 				return CommonDialogFactory.createInputOSMPOIDialog(this, this.mAddOSMPOIType, new CommonCallback<String>(){
 					@Override
-					public void onSuccess(final String pResultName) {
+					public void onSuccess(final String result) {
 						// TODO Ensure mapcenter did not change
-						if(pResultName == null || pResultName.length() == 0){
+						if(result == null || result.length() == 0){
 							onFailure(new OSMAPIException("Invalid name."));
 						}else{
-							try {
-								final GeoPoint mapCenter = WhereAmIMap.this.mGPLastMapClick;
-								final POIType poi = WhereAmIMap.this.mAddOSMPOIType;
+                            final GeoPoint mapCenter = WhereAmIMap.this.mGPLastMapClick;
+                            final POIType poi = WhereAmIMap.this.mAddOSMPOIType;
 
-								Assert.assertNotNull(poi);
-								Assert.assertNotNull(mapCenter);
-								Assert.assertFalse(poi.POIGROUPS[0] == POIGroup.MAINGROUP);
+                            Assert.assertNotNull(poi);
+                            Assert.assertNotNull(mapCenter);
+                            Assert.assertFalse(poi.POIGROUPS[0] == POIGroup.MAINGROUP);
 
-								final long now = System.currentTimeMillis();
-								final String utcTimestamp = TimeUtils.convertTimestampToUTCString(now);
-								final String username = Preferences.getOSMAccountUsername(WhereAmIMap.this);
-								final String password = Preferences.getOSMAccountPassword(WhereAmIMap.this);
-
-								NodeCreationRequester.requestAddPOI(username, password, pResultName,
-										mapCenter.getLatitudeE6() / 1E6, mapCenter.getLongitudeE6() / 1E6,
-										utcTimestamp, poi.OSMKEYNAME, poi.RAWNAME);
-							} catch (final Throwable t) {
-								onFailure(t);
-							}
+                            mapAnnotationDB.addPoi(WhereAmIMap.this.mGPLastMapClick, WhereAmIMap.this.mAddOSMPOIType, result);
 						}
 					}
-
 					@Override
 					public void onFailure(final Throwable t) {
-					}
-				});
-			case DIALOG_INPUT_OSM_ACCOUNT_INFO:
-				return CommonDialogFactory.createOSMAccountInfoDialog(this, new CommonCallbackAdapter<Boolean>(){
-					@Override
-					public void onSuccess(final Boolean result) {
-						if(result){
-							showPOICategorySelectorActivity();
-						}
 					}
 				});
 			default:
@@ -1313,11 +1282,9 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 		final LayoutInflater inflater = LayoutInflater.from(this);
 		final FrameLayout fl = (FrameLayout)inflater.inflate(R.layout.dlg_osb_add_ftpc, null);
 
-		final EditText etMail = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_mail);
 		final EditText etPostcode1 = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_postcode1);
 		final EditText etPostcode2 = (EditText)fl.findViewById(R.id.et_dlg_osb_add_ftpc_postcode2);
 
-		etMail.setText(Preferences.getFTPCConfirmationMail(this));
 		etPostcode1.setSelectAllOnFocus(true);
 		etPostcode2.setSelectAllOnFocus(true);
 
@@ -1327,54 +1294,9 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 		.setPositiveButton(R.string.save, new DialogInterface.OnClickListener(){
 			@Override
 			public void onClick(final DialogInterface d, final int which) {
-				final String mail = etMail.getText().toString();
-
-				/* TODO Add simple Email-Matcher. */
-				if(mail.length() == 0){
-					Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_ftpc_mail_invalid_comment, Toast.LENGTH_LONG).show();
-					return;
-				}
-
-				/* Store email for next use. */
-				Preferences.saveFTPCConfirmationMail(WhereAmIMap.this, mail);
-
 				final String postcode1 = etPostcode1.getText().toString();
 				final String postcode2 = etPostcode2.getText().toString();
-				final String postcode = postcode1 + " " + postcode2;
-
-				if(postcode.length() == 0 || !PostcodeUK_BS7776Matcher.doesMatchUKPostcode_BS_7666(postcode)){
-					Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_ftpc_postcode_invalid_comment, Toast.LENGTH_LONG).show();
-					return;
-				}
-
-				Toast.makeText(WhereAmIMap.this, R.string.please_wait_a_moment, Toast.LENGTH_LONG).show();
-				new Thread(new Runnable(){
-					@Override
-					public void run() {
-						try {
-							final boolean success = FTPCRequester.submitPostcode(WhereAmIMap.this.mGPLastMapClick, postcode1, postcode2, mail);
-							if(success){
-								runOnUiThread(new Runnable(){
-									@Override
-									public void run() {
-										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_ftpc_success, Toast.LENGTH_LONG).show();
-									}
-								});
-							}else{
-								runOnUiThread(new Runnable(){
-									@Override
-									public void run() {
-										Toast.makeText(WhereAmIMap.this, R.string.dlg_osb_add_ftpc_failed, Toast.LENGTH_LONG).show();
-									}
-								});
-							}
-						} catch (final Exception e) {
-							Exceptor.e("Error submitting FreeThePostcode-Postcode.", e, WhereAmIMap.this);
-						}
-					}
-				}).start();
-
-				d.dismiss();
+                mapAnnotationDB.addFtpc(WhereAmIMap.this.mGPLastMapClick, postcode1, postcode2);
 			}
 		})
 		.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener(){
@@ -1383,14 +1305,6 @@ public class WhereAmIMap extends OpenStreetMapAndNavBaseActivity implements Pref
 				d.dismiss();
 			}
 		}).create().show();
-	}
-
-	protected void showAddPOIDialog() {
-		if(Preferences.getOSMAccountUsername(this).length() == 0){
-			showDialog(DIALOG_INPUT_OSM_ACCOUNT_INFO);
-		}else{
-			showPOICategorySelectorActivity();
-		}
 	}
 
 	protected void showPOICategorySelectorActivity() {

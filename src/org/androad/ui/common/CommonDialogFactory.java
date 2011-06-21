@@ -50,6 +50,7 @@ public class CommonDialogFactory {
 	// ===========================================================
 
 	private static final int ALTITUDEPROFILEDIALOG_CONTAINERVIEW_ID = 0;
+    public static FrameLayout inputOSMPOI;
 
 	// ===========================================================
 	// Dialog Creations
@@ -841,15 +842,16 @@ public class CommonDialogFactory {
 
 	public static Dialog createInputOSMPOIDialog(final Context ctx, final POIType pCategoryType, final CommonCallback<String> pCallback) {
 		final LayoutInflater inflater = LayoutInflater.from(ctx);
-		final FrameLayout fl = (FrameLayout)inflater.inflate(R.layout.dlg_input_poiname, null);
+		inputOSMPOI = (FrameLayout)inflater.inflate(R.layout.dlg_input_poiname, null);
 
-		final TextView tvCategoryName = (TextView)fl.findViewById(R.id.tv_dlg_input_osmpoiname_name);
-		tvCategoryName.setText(pCategoryType.READABLENAMERESID);
+		final TextView tvCategoryName = (TextView)inputOSMPOI.findViewById(R.id.tv_dlg_input_osmpoiname_name);
+        if (pCategoryType != null)
+            tvCategoryName.setText(pCategoryType.READABLENAMERESID);
 
-		final EditText etPOIName = (EditText)fl.findViewById(R.id.et_dlg_input_osmpoiname_name);
+		final EditText etPOIName = (EditText)inputOSMPOI.findViewById(R.id.et_dlg_input_osmpoiname_name);
 
 		return new AlertDialog.Builder(ctx)
-		.setView(fl)
+		.setView(inputOSMPOI)
 		.setTitle(R.string.dlg_osb_edit_bug_title)
 		.setPositiveButton(R.string.save, new DialogInterface.OnClickListener(){
 			@Override
